@@ -1,6 +1,5 @@
 import java.util.Objects;
 
-/*todo : все возможные методы private*/
 public class FooBar<K,V> implements Bar<K,V> {
 
     private static final int INITIAL_CAPACITY = 16;
@@ -220,42 +219,50 @@ public class FooBar<K,V> implements Bar<K,V> {
     }
 
     private Node<K,V> removeNode(int hash, K key) {
-        Node<K,V>[] newArrayOfNodes;
-        Node<K,V> currentNode;
-        int lenghtOfNewArrayOfNodes;
-        int index;
+        Node<K,V>[] newArrayOfNodes = nodesArray;
+        int index = newArrayOfNodes.length - 1 & hash;
 
-        if ((newArrayOfNodes = nodesArray) != null && (lenghtOfNewArrayOfNodes = newArrayOfNodes.length) > 0 && (currentNode = newArrayOfNodes[index = (lenghtOfNewArrayOfNodes - 1) & hash]) != null) {
-            Node<K,V> node = null;
-            Node<K,V> nextNode;
-            K currentNodeKey;
-            V currentNodeValue;
+        Node<K, V> nodeToBeRemoved = getRemovingNode(hash, key, newArrayOfNodes, index);
 
-            if (currentNode.hash == hash &&
-                ((currentNodeKey = currentNode.key) == key || (key != null && key.equals(currentNodeKey)))){
-                node = currentNode;
-            } else if ((nextNode = currentNode.next) != null) {
-                do {
-                    if (nextNode.hash == hash &&
-                        ((currentNodeKey = nextNode.key) == key ||
-                         (key != null && key.equals(currentNodeKey)))) {
-                        node = nextNode;
-                        break;
-                    }
-                    currentNode = nextNode;
-                } while ((nextNode = nextNode.next) != null);
-            }
+        if (nodeToBeRemoved != null){
+            return nodeToBeRemoved;
+        }
+        return null;
+    }
 
-            if (node != null && ((currentNodeValue = node.value) == null ||
-                                 (null != null && ((V) null).equals(currentNodeValue)))) {
-                if (node == currentNode) {
-                    newArrayOfNodes[index] = node.next;
-                } else {
-                    currentNode.next = node.next;
+    private Node<K, V> getRemovingNode(int hash, K key, Node<K, V>[] newArrayOfNodes, int index) {
+        Node<K, V> currentNode = newArrayOfNodes[index];
+        Node<K, V> nextNode = currentNode.next;
+        K currentNodeKey = currentNode.key;
+        Node<K, V> removingNode = null;
+
+        if (currentNode.hash == hash && key.equals(currentNodeKey)){
+            removingNode = currentNode;
+        }
+        else if (nextNode != null) {
+            do {
+                if (nextNode.hash == hash &&
+                    ((currentNodeKey = nextNode.key) == key ||
+                     (key != null && key.equals(currentNodeKey)))) {
+                    removingNode = nextNode;
+                    break;
                 }
-                --size;
-                return node;
+                currentNode = nextNode;
+            } while ((nextNode = nextNode.next) != null);
+        }
+
+        return removeNodeWithNoValue(newArrayOfNodes, currentNode, removingNode, index);
+    }
+
+    private Node<K, V> removeNodeWithNoValue(Node<K, V>[] newArrayOfNodes, Node<K, V> currentNode, Node<K, V> removingNode, int index) {
+        if (removingNode != null && removingNode.value == null) {
+            if (removingNode == currentNode) {
+                newArrayOfNodes[index] = removingNode.next;
+            } else {
+                currentNode.next = removingNode.next;
             }
+            --size;
+            return removingNode;
         }
         return null;
     }
