@@ -35,7 +35,7 @@ public class FooBar<K,V> implements Bar<K,V> {
         } else {
             Node<K,V> nextNode;
 
-            if (nodesArray[index].hash == hash && key.equals(nodesArray[index].key)){
+            if (key.equals(nodesArray[index].key)){
                 nextNode = nodesArray[index];
             } else {
                 nextNode = setNextNode(hash, key, value, index);
@@ -61,7 +61,7 @@ public class FooBar<K,V> implements Bar<K,V> {
                 nodesArray[index].next = newNode(hash, key, value, null);
                 break;
             }
-            if (nextNode.hash == hash && key.equals(nextNode.key)){
+            if (key.equals(nextNode.key)){
                 break;
             }
             nodesArray[index] = nextNode;
@@ -204,7 +204,7 @@ public class FooBar<K,V> implements Bar<K,V> {
 
         nextNode = firstNode.next;
         while (nextNode != null) {
-            if (nextNode.hash == hash &&  key.equals(nextNode.key)){
+            if (key.equals(nextNode.key)){
                 return nextNode;
             }
             nextNode = nextNode.next;
@@ -236,14 +236,12 @@ public class FooBar<K,V> implements Bar<K,V> {
         K currentNodeKey = currentNode.key;
         Node<K, V> removingNode = null;
 
-        if (currentNode.hash == hash && key.equals(currentNodeKey)){
+        if (key.equals(currentNodeKey)){
             removingNode = currentNode;
         }
         else if (nextNode != null) {
             do {
-                if (nextNode.hash == hash &&
-                    ((currentNodeKey = nextNode.key) == key ||
-                     (key != null && key.equals(currentNodeKey)))) {
+                if (nextNode.key == key) {
                     removingNode = nextNode;
                     break;
                 }
