@@ -2,10 +2,10 @@ import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Objects;
 
-public interface Bar<K,V> {
+interface Bar<K,V> {
     V get(K key);
-    V put(K key, V value);
-    V remove(K key);
+    void put(K key, V value);
+    void remove(K key);
 
     interface Entry<K,V> {
         K getKey();

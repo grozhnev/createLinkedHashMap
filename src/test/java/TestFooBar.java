@@ -8,18 +8,18 @@ import java.util.Map;
 public class TestFooBar {
 
 
-    Map<Integer, String> hashMap;
-    Bar<Integer, String> fooBar;
+    private Map<Integer, String> hashMap;
+    private Bar<Integer, String> fooBar;
 
     @Before public void init(){
         hashMap = new HashMap<>();
-        fooBar = new FooBar<Integer, String>();
+        fooBar = new FooBar<>();
 
         fillHashMap(hashMap);
         fillFooBar(fooBar);
     }
 
-    void fillHashMap(Map<Integer, String> collection){
+    private void fillHashMap(Map<Integer, String> collection){
         collection.put(70, "gvozd");
         collection.put(30, "tyumen");
         collection.put(4, "alabama");
@@ -41,7 +41,7 @@ public class TestFooBar {
         collection.put(2, "sally");
         collection.put(80, "kilo");
     }
-    void fillFooBar(Bar<Integer, String> collection){
+    private void fillFooBar(Bar<Integer, String> collection){
         collection.put(70, "gvozd");
         collection.put(30, "tyumen");
         collection.put(4, "alabama");

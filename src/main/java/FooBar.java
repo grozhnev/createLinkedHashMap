@@ -1,188 +1,225 @@
 import java.util.Objects;
 
+/*todo : все возможные методы private*/
 public class FooBar<K,V> implements Bar<K,V> {
 
-    static final int DEFAULT_INITIAL_CAPACITY = 16;
-    static final int MAXIMUM_CAPACITY = 1 << 30;
-    static final float DEFAULT_LOAD_FACTOR = 0.75F;
+    private static final int INITIAL_CAPACITY = 16;
+    private static final int MAX_CAPACITY = 1 << 30;
+    private static final float LOAD_FACTOR = 0.75F;
 
-    final float loadFactor = 0.75F;
+    private int threshold;
+    private int size;
+    private final float loadFactor = 0.75F;
 
-    int threshold;
-    int size;
+    private Node<K,V>[] nodesArray;
 
-    Node<K,V>[] nodesArray;
-
-
-    final int hash(K key) {
-        int h;
-        return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+    private int hash(K key) {
+        if (key == null){
+            return 0;
+        }
+        return key.hashCode() ^ (key.hashCode() >>> 16);
     }
 
     @Override
-    public V put(K key, V value) {
-        return putVal(hash(key), key, value);
+    public void put(K key, V value) {
+        putVal(hash(key), key, value);
     }
 
-    final V putVal(int hash, K key, V value) {
-        Node<K,V>[] localNodeArray;
-        Node<K,V> insertionNode;
-        int lengthOfNodeArray;
-        int index;
+    private V putVal(int hash, K key, V value) {
+        if (nodesArray == null || nodesArray.length == 0){
+            nodesArray = resize();
+        }
 
-        if ((localNodeArray = nodesArray) == null || (lengthOfNodeArray = localNodeArray.length) == 0)
-            lengthOfNodeArray = (localNodeArray = resize()).length;
-        if ((insertionNode = localNodeArray[index = (lengthOfNodeArray - 1) & hash]) == null)
-            localNodeArray[index] = newNode(hash, key, value, null);
-        else {
-            Node<K,V> otherValuenNode;
-            K otherValueNodeKey;
+        int index = (nodesArray.length - 1) & hash;
+        if (nodesArray[index] == null) {
+            nodesArray[index] = newNode(hash, key, value, null);
+        } else {
+            Node<K,V> nextNode;
 
-            if (insertionNode.hash == hash &&
-                ((otherValueNodeKey = insertionNode.key) == key || (key != null && key.equals(otherValueNodeKey))))
-                otherValuenNode = insertionNode;
-            else {
-                while (true) {
-                    if ((otherValuenNode = insertionNode.next) == null) {
-                        insertionNode.next = newNode(hash, key, value, null);
-                        break;
-                    }
-                    if (otherValuenNode.hash == hash &&
-                        ((otherValueNodeKey = otherValuenNode.key) == key || (key != null && key.equals(otherValueNodeKey))))
-                        break;
-                    insertionNode = otherValuenNode;
-                }
+            if (nodesArray[index].hash == hash && key.equals(nodesArray[index].key)){
+                nextNode = nodesArray[index];
+            } else {
+                nextNode = setNextNode(hash, key, value, index);
             }
-            if (otherValuenNode != null) {
-                V oldValue = otherValuenNode.value;
-                return oldValue;
+
+            if (nextNode != null) {
+                return nextNode.value;
             }
         }
-        if (++size > threshold)
+
+        if (++size > threshold){
             resize();
+        }
         return null;
     }
 
-    Node<K,V> newNode(int hash, K key, V value, Node<K,V> next) {
+    private Node<K, V> setNextNode(int hash, K key, V value, int index) {
+        Node<K, V> nextNode;
+        while (true) {
+            nextNode = nodesArray[index].next;
+
+            if (nodesArray[index].next == null) {
+                nodesArray[index].next = newNode(hash, key, value, null);
+                break;
+            }
+            if (nextNode.hash == hash && key.equals(nextNode.key)){
+                break;
+            }
+            nodesArray[index] = nextNode;
+        }
+        return nextNode;
+    }
+
+    private Node<K,V> newNode(int hash, K key, V value, Node<K, V> next) {
         return new Node<>(hash, key, value, next);
     }
 
-    final Node<K,V>[] resize() {
+    private Node<K,V>[] resize() {
         Node<K,V>[] oldNodesArray = nodesArray;
-        int oldCapacity = (oldNodesArray == null) ? 0 : oldNodesArray.length;
-        int oldThreshold = threshold;
-        int newCapacity;
         int newThreshold = 0;
-        if (oldCapacity > 0) {
-            if (oldCapacity >= MAXIMUM_CAPACITY) {
-                threshold = Integer.MAX_VALUE;
-                return oldNodesArray;
-            } else if ((newCapacity = oldCapacity << 1) < MAXIMUM_CAPACITY && oldCapacity >= DEFAULT_INITIAL_CAPACITY){
-                newThreshold = oldThreshold << 1;
-            }
-        } else if (oldThreshold > 0) {
+        int newCapacity;
+        int oldThreshold = threshold;
+        int oldCapacity = (oldNodesArray == null) ? 0 : oldNodesArray.length;
+
+        if (oldCapacity >= MAX_CAPACITY) {
+            threshold = Integer.MAX_VALUE;
+            return oldNodesArray;
+        }
+        else if (oldCapacity >= INITIAL_CAPACITY && oldCapacity << 1 < MAX_CAPACITY){
+            newCapacity = oldCapacity;
+            newThreshold = oldThreshold << 1;
+        }
+        else if (oldCapacity <= 0 &&oldThreshold > 0) {
             newCapacity = oldThreshold;
-        } else {
-            newCapacity = DEFAULT_INITIAL_CAPACITY;
-            newThreshold = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
+        }
+        else {
+            newCapacity = INITIAL_CAPACITY;
+            newThreshold = (int)(LOAD_FACTOR * INITIAL_CAPACITY);
         }
 
-        if (newThreshold == 0) {
-            float newMaxThresholdBound = (float)newCapacity * loadFactor;
-            newThreshold = (newCapacity < MAXIMUM_CAPACITY && newMaxThresholdBound < (float)MAXIMUM_CAPACITY ?
-                      (int)newMaxThresholdBound : Integer.MAX_VALUE);
-        }
-        threshold = newThreshold;
-//        @SuppressWarnings({"rawtypes","unchecked"})
-        Node<K,V>[] newNodeArray = (Node<K,V>[])new Node[newCapacity];
+        newThreshold = setNewThreshold(newThreshold, newCapacity);
+
+        Node<K,V>[] newNodeArray = new Node[newCapacity];
         nodesArray = newNodeArray;
+        threshold = newThreshold;
+
+        fillNewArrayWithNodes(oldNodesArray,newNodeArray, newCapacity, oldCapacity);
+
+        return newNodeArray;
+    }
+
+    private int setNewThreshold(int newThreshold, int newCapacity) {
+        if (newThreshold == 0) {
+            if (newCapacity < MAX_CAPACITY && newCapacity * loadFactor < MAX_CAPACITY ){
+                newThreshold = (int) (newCapacity * loadFactor);
+            } else {
+                newThreshold = Integer.MAX_VALUE;
+            }
+        }
+        return newThreshold;
+    }
+
+    private void fillNewArrayWithNodes(Node<K, V>[] oldNodesArray, Node<K, V>[] newNodeArray, int newCapacity, int oldCapacity) {
         if (oldNodesArray != null) {
-            for (int j = 0; j < oldCapacity; ++j) {
-                Node<K,V> currentNode;
-                if ((currentNode = oldNodesArray[j]) != null) {
-                    oldNodesArray[j] = null;
-                    if (currentNode.next == null){
+            for (int index = 0; index < oldCapacity; ++index) {
+
+                Node<K, V> currentNode;
+                if (oldNodesArray[index] != null) {
+                    currentNode = oldNodesArray[index];
+                    oldNodesArray[index] = null;
+
+                    if (currentNode.next == null) {
                         newNodeArray[currentNode.hash & (newCapacity - 1)] = currentNode;
                     } else {
-                        Node<K,V> hiHead = null;
-                        Node<K,V> loHead = null;
-                        Node<K,V> hiTail = null;
-                        Node<K,V> loTail = null;
-                        Node<K,V> nextNode;
-
-                        do {
-                            nextNode = currentNode.next;
-                            if ((currentNode.hash & oldCapacity) == 0) {
-                                if (loTail == null){
-                                    loHead = currentNode;
-                                } else {
-                                    loTail.next = currentNode;
-                                }
-                                loTail = currentNode;
-
-                            } else {
-                                if (hiTail == null){
-                                    hiHead = currentNode;
-                                } else {
-                                    hiTail.next = currentNode;
-                                }
-                                hiTail = currentNode;
-                            }
-                        } while ((currentNode = nextNode) != null);
-
-                        if (loTail != null) {
-                            loTail.next = null;
-                            newNodeArray[j] = loHead;
-                        }
-
-                        if (hiTail != null) {
-                            hiTail.next = null;
-                            newNodeArray[j + oldCapacity] = hiHead;
-                        }
+                        setUpNextNodes(newNodeArray, oldCapacity, index, currentNode);
                     }
                 }
             }
         }
-        return newNodeArray;
+    }
+
+    private void setUpNextNodes(Node<K, V>[] newNodeArray, int oldCapacity, int index, Node<K, V> currentNode) {
+        Node<K, V> hiHead = null;
+        Node<K, V> loHead = null;
+        Node<K, V> hiTail = null;
+        Node<K, V> loTail = null;
+        Node<K, V> nextNode;
+
+        do {
+            nextNode = currentNode.next;
+            if ((currentNode.hash & oldCapacity) == 0) {
+                loHead = getKvNode(currentNode, loHead, loTail);
+                loTail = currentNode;
+            } else {
+                hiHead = getKvNode(currentNode, hiHead, hiTail);
+                hiTail = currentNode;
+            }
+        } while ((currentNode = nextNode) != null);
+
+        if (loTail != null) {
+            loTail.next = null;
+            newNodeArray[index] = loHead;
+        }
+
+        if (hiTail != null) {
+            hiTail.next = null;
+            newNodeArray[index + oldCapacity -1] = hiHead;
+        }
+    }
+
+    private Node<K, V> getKvNode(Node<K, V> currentNode, Node<K, V> loHead, Node<K, V> loTail) {
+        if (loTail == null) {
+            loHead = currentNode;
+        } else {
+            loTail.next = currentNode;
+        }
+        return loHead;
     }
 
 
     @Override
     public V get(K key) {
-        Node<K,V> selectedNode = getNode(hash(key), key);
-        return selectedNode == null ? null : selectedNode.value ;
+        if(getNode(hash(key), key) == null){
+            return null;
+        }
+        return Objects.requireNonNull(getNode(hash(key), key)).value ;
     }
 
-    final Node<K,V> getNode(int hash, K key) {
-        Node<K,V>[] newNodesArray;
-        Node<K,V> firstNode;
-        Node<K,V> nextNode;
-        int nodesArrayLenght;
-        K nodeKey;
+    private Node<K,V> getNode(int hash, K key) {
+        Node<K,V>[] newNodesArray  = nodesArray;
+        Node<K,V> firstNode = newNodesArray[newNodesArray.length - 1 & hash];
+        Node<K,V> nextNode = getNextNode(hash, key, firstNode);
 
-        if ((newNodesArray = nodesArray) != null && (nodesArrayLenght = newNodesArray.length) > 0 && (firstNode = newNodesArray[(nodesArrayLenght - 1) & hash]) != null) {
-            if (firstNode.hash == hash &&
-                ((nodeKey = firstNode.key) == key || (key != null && key.equals(nodeKey))))
-                return firstNode;
-            if ((nextNode = firstNode.next) != null) {
-                do {
-                    if (nextNode.hash == hash &&
-                        ((nodeKey = nextNode.key) == key || (key != null && key.equals(nodeKey))))
-                        return nextNode;
-                } while ((nextNode = nextNode.next) != null);
+        if (newNodesArray.length > 0 && nextNode != null) {
+            return nextNode;
+        } else {
+            return null;
+        }
+    }
+
+    private Node<K, V> getNextNode(int hash, K key, Node<K, V> firstNode) {
+        Node<K, V> nextNode;
+        if (firstNode.hash == hash && key.equals(firstNode.key)){
+            return firstNode;
+        }
+
+        nextNode = firstNode.next;
+        while (nextNode != null) {
+            if (nextNode.hash == hash &&  key.equals(nextNode.key)){
+                return nextNode;
             }
+            nextNode = nextNode.next;
         }
         return null;
     }
 
 
     @Override
-    public V remove(K key) {
-        Node<K,V> removingNode;
-        return (removingNode = removeNode(hash(key), key, null)) == null ? null : removingNode.value;
+    public void remove(K key) {
+        removeNode(hash(key), key);
     }
 
-    final Node<K,V> removeNode(int hash, K key, V value) {
+    private Node<K,V> removeNode(int hash, K key) {
         Node<K,V>[] newArrayOfNodes;
         Node<K,V> currentNode;
         int lenghtOfNewArrayOfNodes;
@@ -209,8 +246,8 @@ public class FooBar<K,V> implements Bar<K,V> {
                 } while ((nextNode = nextNode.next) != null);
             }
 
-            if (node != null && ((currentNodeValue = node.value) == value ||
-                                 (value != null && value.equals(currentNodeValue)))) {
+            if (node != null && ((currentNodeValue = node.value) == null ||
+                                 (null != null && ((V) null).equals(currentNodeValue)))) {
                 if (node == currentNode) {
                     newArrayOfNodes[index] = node.next;
                 } else {
@@ -238,8 +275,6 @@ public class FooBar<K,V> implements Bar<K,V> {
             this.next = next;
         }
 
-        public final K getKey()        { return key; }
-        public final V getValue()      { return value; }
         public final String toString() { return key + "=" + value; }
 
         public final int hashCode() {
@@ -251,9 +286,7 @@ public class FooBar<K,V> implements Bar<K,V> {
                 return true;
             if (o instanceof Bar.Entry) {
                 Entry<?,?> e = (Entry<?,?>)o;
-                if (Objects.equals(key, e.getKey()) &&
-                    Objects.equals(value, e.getValue()))
-                    return true;
+                return Objects.equals(key, e.getKey()) && Objects.equals(value, e.getValue());
             }
             return false;
         }
