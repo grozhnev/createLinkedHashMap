@@ -12,7 +12,7 @@ public class FooBar<K,V> implements Bar<K,V> {
 
     private Node<K,V>[] nodesArray;
 
-    private int hash(K key) {
+    protected int hash(K key) {
         if (key == null){
             return 0;
         }
@@ -187,7 +187,7 @@ public class FooBar<K,V> implements Bar<K,V> {
     private Node<K,V> getNode(int hash, K key) {
         Node<K,V>[] newNodesArray  = nodesArray;
         Node<K,V> firstNode = newNodesArray[newNodesArray.length - 1 & hash];
-        Node<K,V> nextNode = getNextNode(hash, key, firstNode);
+        Node<K,V> nextNode = getNextNode(key, firstNode);
 
         if (newNodesArray.length > 0 && nextNode != null) {
             return nextNode;
@@ -196,9 +196,9 @@ public class FooBar<K,V> implements Bar<K,V> {
         }
     }
 
-    private Node<K, V> getNextNode(int hash, K key, Node<K, V> firstNode) {
+    private Node<K, V> getNextNode(K key, Node<K, V> firstNode) {
         Node<K, V> nextNode;
-        if (firstNode.hash == hash && key.equals(firstNode.key)){
+        if (key.equals(firstNode.key)){
             return firstNode;
         }
 
@@ -218,7 +218,7 @@ public class FooBar<K,V> implements Bar<K,V> {
         removeNode(hash(key), key);
     }
 
-    private Node<K,V> removeNode(int hash, K key) {
+    protected Node<K,V> removeNode(int hash, K key) {
         Node<K,V>[] newArrayOfNodes = nodesArray;
         int index = newArrayOfNodes.length - 1 & hash;
 

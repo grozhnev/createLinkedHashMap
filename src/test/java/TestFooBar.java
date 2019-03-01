@@ -67,6 +67,7 @@ public class TestFooBar {
     @Test
     public void testGet(){
         Assert.assertEquals(hashMap.get(30), fooBar.get(30));
+        Assert.assertEquals(hashMap.get(55), fooBar.get(55));
     }
 
     @Test
@@ -84,4 +85,6 @@ public class TestFooBar {
 
         Assert.assertEquals(fooBar.get(1), hashMap.get(1));
     }
+
+
 }
