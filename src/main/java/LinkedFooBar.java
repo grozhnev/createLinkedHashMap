@@ -15,9 +15,9 @@ public class LinkedFooBar<K,V> extends FooBar implements Bar {
 
         if (!linkedList.contains(key)){
             linkedList.add((K) key);
-        } else {
-            super.put(key,value);
         }
+        super.put(key,value);
+
 
     }
 
